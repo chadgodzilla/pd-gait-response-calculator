@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PD Gait Speed Improvement Calculator</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+       background: #F4F6F9; color: #1A1A2E; min-height: 100vh; }
+
+/* ── Header ─────────────────────────────────────────────────────── */
+header { background: linear-gradient(135deg,#1565C0,#283593);
+         color: white; padding: 24px 32px; }
+header h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 6px; }
+header p  { font-size: 0.85rem; opacity: 0.88; max-width: 780px; line-height: 1.5; }
+
+/* ── Two-column wrapper ──────────────────────────────────────────── */
+.two-col { display: flex; gap: 20px; max-width: 1100px;
+           margin: 28px auto 0; padding: 0 20px; align-items: stretch; }
+.col-left  { flex: 0 0 420px; display: flex; flex-direction: column; }
+.col-right { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.col-left .card, .col-right .result-card { flex: 1; }
+
+/* ── Shared card ─────────────────────────────────────────────────── */
+.card { background: white; border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        padding: 24px 28px; margin-bottom: 18px; }
+.card h2 { font-size: 0.95rem; font-weight: 700; color: #1565C0;
+            border-bottom: 2px solid #E3F2FD; padding-bottom: 8px;
+            margin-bottom: 20px; }
+
+/* ── Inputs ──────────────────────────────────────────────────────── */
+.field { margin-bottom: 20px; }
+.field label { display: block; font-size: 0.88rem; font-weight: 600;
+               margin-bottom: 4px; color: #222; }
+.field .hint { font-size: 0.76rem; color: #777; margin-bottom: 7px; line-height: 1.4; }
+
+.radio-row { display: flex; flex-direction: column; gap: 8px; }
+.radio-row label { display: flex; align-items: center; gap: 8px;
+                   font-size: 0.88rem; cursor: pointer; font-weight: 400;
+                   padding: 9px 12px; border: 1.5px solid #E0E0E0;
+                   border-radius: 8px; transition: border-color .15s, background .15s; }
+.radio-row label:has(input:checked) { border-color: #1565C0; background: #EEF4FF; }
+.radio-row input[type=radio] { accent-color: #1565C0; width: 16px; height: 16px; flex-shrink: 0; }
+
+.slider-wrap { display: flex; align-items: center; gap: 10px; }
+input[type=range] { flex: 1; accent-color: #1565C0; height: 4px; }
+.val-badge { background: #E3F2FD; color: #1565C0; border-radius: 6px;
+             padding: 3px 10px; font-weight: 700; font-size: 0.9rem;
+             min-width: 56px; text-align: center; }
+
+.btn { display: block; width: 100%; padding: 13px;
+       background: #1565C0; color: white; border: none;
+       border-radius: 8px; font-size: 0.97rem; font-weight: 700;
+       cursor: pointer; transition: background .2s; margin-top: 4px; }
+.btn:hover { background: #0D47A1; }
+
+/* ── Result card ─────────────────────────────────────────────────── */
+.result-card { background: white; border-radius: 12px;
+               box-shadow: 0 2px 8px rgba(0,0,0,.08);
+               padding: 24px 28px; margin-bottom: 18px;
+               border-top: 4px solid #1565C0; }
+.result-card h2 { font-size: 0.95rem; font-weight: 700; color: #1565C0;
+                  border-bottom: 2px solid #E3F2FD; padding-bottom: 8px;
+                  margin-bottom: 18px; }
+
+.result-label { font-size: 0.82rem; color: #666; margin-bottom: 4px; }
+.big-number { font-size: 3rem; font-weight: 800; color: #1565C0;
+              line-height: 1; margin-bottom: 10px; }
+.big-number span { font-size: 1rem; font-weight: 400; color: #666; margin-left: 4px; }
+
+/* ── Tier badge ──────────────────────────────────────────────────── */
+.tier-badge { display: inline-block; padding: 6px 18px; border-radius: 20px;
+              font-size: 0.9rem; font-weight: 700; margin-bottom: 16px;
+              border: 2px solid; }
+
+/* ── MCID segmented bar ──────────────────────────────────────────── */
+.mcid-section { margin-bottom: 10px; }
+.mcid-section-label { font-size: 0.78rem; color: #555; margin-bottom: 20px; }
+.seg-bar-wrap { position: relative; }
+/* pointer value floats above the bar */
+.seg-pointer-val { position: absolute; top: -20px; font-size: 0.72rem;
+                   font-weight: 700; color: #1A1A2E;
+                   transform: translateX(-50%);
+                   transition: left .5s ease;
+                   white-space: nowrap; pointer-events: none; }
+/* downward triangle sits on top edge of bar */
+.seg-pointer { position: absolute; top: 0; width: 0; height: 0;
+               border-left: 7px solid transparent;
+               border-right: 7px solid transparent;
+               border-top: 10px solid #1A1A2E;
+               transform: translateX(-50%);
+               transition: left .5s ease; z-index: 10; pointer-events: none; }
+.seg-bar { display: flex; border-radius: 8px; overflow: hidden; height: 28px; }
+.seg { display: flex; align-items: center; justify-content: center;
+       font-size: 0.7rem; font-weight: 600; color: white;
+       transition: opacity .3s; position: relative; }
+.seg-labels { display: flex; font-size: 0.68rem; color: #666; margin-top: 4px; }
+.seg-label-item { text-align: center; }
+
+/* ── Interpretation box ──────────────────────────────────────────── */
+.interp-box { border-radius: 8px; padding: 13px 16px;
+              margin-top: 8px; font-size: 0.84rem; color: #333;
+              border-left: 4px solid #1565C0; line-height: 1.6;
+              background: #F0F4FF; }
+.interp-box.good { border-left-color: #2E7D32; background: #F1F8E9; }
+.interp-box.warn { border-left-color: #E65100; background: #FFF3E0; }
+.interp-box.none { border-left-color: #C62828; background: #FFEBEE; }
+
+/* uncertainty + caveat notes */
+.note-box { background: #F8F9FA; border-radius: 8px; padding: 10px 14px;
+            margin-top: 8px; font-size: 0.78rem; color: #555;
+            line-height: 1.55; border: 1px solid #E8E8E8; }
+.note-box + .note-box { margin-top: 6px; }
+
+.perf-row { margin-top: 14px; font-size: 0.78rem; color: #888; }
+.perf-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.badge { background: #E3F2FD; color: #1565C0; border-radius: 20px;
+         padding: 3px 12px; font-size: 0.76rem; font-weight: 500; }
+
+/* placeholder state */
+.result-placeholder { text-align: center; padding: 40px 20px; color: #aaa; font-size: 0.9rem; }
+.result-placeholder svg { display: block; margin: 0 auto 12px; opacity: .35; }
+
+/* ── MCID Reference table ────────────────────────────────────────── */
+.mcid-ref { max-width: 1100px; margin: 0 auto 28px; padding: 0 20px; }
+.mcid-ref .card h2 { font-size: 0.95rem; }
+.ref-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.ref-table th { text-align: left; padding: 9px 12px; font-weight: 600;
+                font-size: 0.8rem; color: #555; border-bottom: 2px solid #E0E0E0; }
+.ref-table td { padding: 10px 12px; border-bottom: 1px solid #F0F0F0;
+                vertical-align: top; }
+.ref-table tr:last-child td { border-bottom: none; }
+.tier-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+            margin-right: 6px; vertical-align: middle; flex-shrink: 0; }
+.tier-name { display: flex; align-items: center; font-weight: 600; }
+.ref-footnote { font-size: 0.75rem; color: #777; margin-top: 12px; line-height: 1.5; }
+
+/* highlight active row */
+.ref-table tr.active-tier td { background: #EEF4FF; }
+
+/* ── Disclaimer ──────────────────────────────────────────────────── */
+.disclaimer-wrap { max-width: 1100px; margin: 0 auto 40px; padding: 0 20px; }
+.disclaimer { background: #FFF8E1; border-left: 4px solid #FFA000;
+              border-radius: 8px; padding: 14px 18px;
+              font-size: 0.82rem; color: #5D4037; line-height: 1.6; }
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 780px) {
+  .two-col { flex-direction: column; }
+  .col-left { flex: none; width: 100%; }
+}
+@media (max-width: 480px) {
+  header h1 { font-size: 1.1rem; }
+  .big-number { font-size: 2.3rem; }
+  .two-col, .mcid-ref, .disclaimer-wrap { padding: 0 12px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PD Gait Speed Improvement Prediction Calculator</h1>
+  <p>Estimates gait speed improvement (Δ speed, m/s) based on baseline patient characteristics and
+     <strong>planned training regimen (observed treatment setting)</strong>, using a predictive
+     association model. Classified using PD-specific MCID thresholds (Hass et al., <em>JNPT</em> 2014).
+     For research use only.</p>
+</header>
+
+<!-- ══ Two-column main area ══════════════════════════════════════════ -->
+<div class="two-col">
+
+  <!-- LEFT: inputs -->
+  <div class="col-left">
+    <div class="card">
+      <h2>Patient Inputs</h2>
+
+      <div class="field">
+        <label>Planned training regimen (observed treatment setting)</label>
+        <div class="hint">Select the training program the patient is enrolled in or planned for.
+          <strong>Note:</strong> This reflects the observed treatment setting in this cohort — it
+          is a predictive feature, not a treatment choice simulator.</div>
+        <div class="radio-row">
+          <label><input type="radio" name="pt" value="1" checked>
+            Physical therapy–supervised training (PT)</label>
+          <label><input type="radio" name="pt" value="0">
+            Self-directed exercise only</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>MoCA score</label>
+        <div class="hint">Montreal Cognitive Assessment · Cohort range: 5–30 (mean 23)</div>
+        <div class="slider-wrap">
+          <input type="range" id="moca" min="5" max="30" step="1" value="23"
+                 oninput="document.getElementById('moca_val').textContent=this.value; liveCalc()">
+          <span class="val-badge" id="moca_val">23</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Baseline gait speed (m/s)</label>
+        <div class="hint">Pre-training comfortable walking speed · Cohort range: 0.34–1.33 m/s (mean 0.93 m/s)</div>
+        <div class="slider-wrap">
+          <input type="range" id="speed" min="0.34" max="1.33" step="0.01" value="0.93"
+                 oninput="document.getElementById('speed_val').textContent=parseFloat(this.value).toFixed(2); liveCalc()">
+          <span class="val-badge" id="speed_val">0.93</span>
+        </div>
+      </div>
+
+      <button class="btn" onclick="calculate()">Calculate Predicted Improvement</button>
+    </div>
+  </div><!-- /col-left -->
+
+  <!-- RIGHT: result -->
+  <div class="col-right">
+    <div class="result-card" id="resultCard">
+      <h2>Prediction Result</h2>
+
+      <!-- placeholder shown before first calculation -->
+      <div class="result-placeholder" id="placeholder">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Enter patient values and press <strong>Calculate</strong>
+      </div>
+
+      <!-- result content (hidden until calculated) -->
+      <div id="resultContent" style="display:none">
+        <div class="result-label">Predicted gait speed improvement after training:</div>
+        <div class="big-number" id="predVal">—<span>m/s</span></div>
+        <div class="tier-badge" id="tierBadge">—</div>
+
+        <!-- segmented MCID bar -->
+        <div class="mcid-section">
+          <div class="mcid-section-label">PD-specific MCID tiers &nbsp;(Hass et al., <em>JNPT</em> 2014)</div>
+          <div class="seg-bar-wrap">
+            <div class="seg-pointer-val" id="pointerVal" style="left:50%"></div>
+            <div class="seg-pointer"     id="pointer"    style="left:50%"></div>
+            <div class="seg-bar">
+              <div class="seg" id="seg0" style="width:29.1%;background:#E8916A;">No impr.</div>
+              <div class="seg" id="seg1" style="width:14.5%;background:#6B9BD2;">Small</div>
+              <div class="seg" id="seg2" style="width:14.5%;background:#5BAD72;">Moderate</div>
+              <div class="seg" id="seg3" style="width:41.9%;background:#7B5EA7;">Large</div>
+            </div>
+            <div class="seg-labels">
+              <div class="seg-label-item" style="width:29.1%;padding-left:2px;">&lt;0.06</div>
+              <div class="seg-label-item" style="width:14.5%;">0.06</div>
+              <div class="seg-label-item" style="width:14.5%;">0.14</div>
+              <div class="seg-label-item" style="width:41.9%;">0.22 m/s</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="interp-box" id="interpBox">—</div>
+
+        <div class="note-box">
+          <strong>Uncertainty:</strong> LOOCV RMSE = 0.137 m/s ≈ 1.7× the inter-tier interval.
+          Tier assignment is a <em>probabilistic tendency</em>; the prediction band may span adjacent tiers.
+        </div>
+        <div class="note-box">
+          ⚠ <strong>Causal caveat:</strong> PT vs. self-training difference reflects an
+          <em>observed association</em>, not a causal treatment effect (patients were not randomized).
+        </div>
+
+        <div class="perf-row">
+          Model: Ridge Regression &nbsp;·&nbsp; Features: Physical therapy, MoCA, Baseline gait speed
+          <div class="perf-badges">
+            <span class="badge">LOOCV R² = 0.378</span>
+            <span class="badge">LOOCV RMSE = 0.137 m/s</span>
+            <span class="badge">n = 44 (NCKUH, Taiwan)</span>
+          </div>
+        </div>
+      </div><!-- /resultContent -->
+    </div><!-- /result-card -->
+  </div><!-- /col-right -->
+
+</div><!-- /two-col -->
+
+<!-- ══ MCID Reference table ═════════════════════════════════════════ -->
+<div class="mcid-ref">
+  <div class="card">
+    <h2>PD Gait Speed MCID Reference &nbsp;(Hass et al., <em>JNPT</em> 2014)</h2>
+    <table class="ref-table" id="mcidRefTable">
+      <thead>
+        <tr>
+          <th>Tier</th>
+          <th>Threshold</th>
+          <th>Clinical interpretation</th>
+          <th>This cohort (n=44)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr data-tier="0">
+          <td><div class="tier-name"><span class="tier-dot" style="background:#E8916A;"></span>0 — No improvement</div></td>
+          <td>&lt; 0.06 m/s</td>
+          <td>Change below the small MCID; unlikely to be perceived as meaningful</td>
+          <td>23 (52.3%)</td>
+        </tr>
+        <tr data-tier="1">
+          <td><div class="tier-name"><span class="tier-dot" style="background:#6B9BD2;"></span>1 — Small</div></td>
+          <td>0.06 to &lt;0.14 m/s</td>
+          <td>Perceptible, small improvement; may affect some daily walking tasks</td>
+          <td>8 (18.2%)</td>
+        </tr>
+        <tr data-tier="2">
+          <td><div class="tier-name"><span class="tier-dot" style="background:#5BAD72;"></span>2 — Moderate</div></td>
+          <td>0.14 to &lt;0.22 m/s</td>
+          <td>Moderate improvement; likely to translate to functional walking gains</td>
+          <td>5 (11.4%)</td>
+        </tr>
+        <tr data-tier="3">
+          <td><div class="tier-name"><span class="tier-dot" style="background:#7B5EA7;"></span>3 — Large</div></td>
+          <td>≥ 0.22 m/s</td>
+          <td>Substantial improvement; corresponds to large effect size in PD motor outcomes</td>
+          <td>8 (18.2%)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="ref-footnote">
+      Thresholds derived from distribution-based analyses and effect size metrics for persons with PD
+      on medication: Hass CJ et al. <em>J Neurol Phys Ther.</em> 2014;38(4):233–238.
+      doi:10.1097/NPT.0000000000000049.<br>
+      A general-pathology MCID of 0.10–0.17 m/s has also been reported across mixed populations:
+      Bohannon &amp; Glenney. <em>J Eval Clin Pract.</em> 2014;20(4):295–300.
+    </p>
+  </div>
+</div>
+
+<!-- ══ Disclaimer ═══════════════════════════════════════════════════ -->
+<div class="disclaimer-wrap">
+  <div class="disclaimer">
+    ⚠ <strong>Research use only — exploratory prototype, not validated for individual clinical decisions.</strong>
+    Based on a preliminary single-center study (n = 44, NCKUH, Taiwan) without external validation.
+    The LOOCV RMSE (0.137 m/s) exceeds the inter-tier interval (0.08 m/s); tier assignments carry
+    substantial uncertainty at the individual-patient level. Results should not replace clinical judgment.
+  </div>
+</div>
+
+<script>
+// ── Model coefficients (Ridge regression, StandardScaler pipeline; back-transformed to raw units) ──
+const params = {
+  intercept: 0.19756217209027355,
+  PT:    0.0825782131946108,
+  MoCA:  0.013621728989162614,
+  Speed: -0.4765715309408589
+};
+
+// Tier definitions: [label, color, text-color for badge, border-color, interp class]
+const TIERS = [
+  { label: "Tier 0 — No Improvement", color: "#E8916A", badgeBg: "#FFF0E8", badgeBorder: "#E8916A", interpClass: "none",
+    text: "<strong>Predicted: No meaningful improvement.</strong> The predicted change is below the small MCID (0.06 m/s) for persons with PD. This patient profile may not achieve a perceptible gait speed gain from this training program." },
+  { label: "Tier 1 — Small Improvement", color: "#6B9BD2", badgeBg: "#EEF4FF", badgeBorder: "#6B9BD2", interpClass: "",
+    text: "<strong>Predicted: Small, perceptible improvement.</strong> The predicted change (0.06 to &lt;0.14 m/s) meets the small MCID threshold. Some functional benefit is likely, though it may be limited in daily-life walking tasks." },
+  { label: "Tier 2 — Moderate Improvement", color: "#5BAD72", badgeBg: "#F1F8E9", badgeBorder: "#5BAD72", interpClass: "good",
+    text: "<strong>Predicted: Moderate improvement.</strong> The predicted change (0.14 to &lt;0.22 m/s) meets the moderate MCID threshold. This profile is likely to translate to meaningful functional walking gains in daily life." },
+  { label: "Tier 3 — Large Improvement", color: "#7B5EA7", badgeBg: "#F5F0FF", badgeBorder: "#7B5EA7", interpClass: "good",
+    text: "<strong>Predicted: Large, substantial improvement.</strong> The predicted change (≥ 0.22 m/s) meets the large MCID for persons with PD. This profile has the highest potential for clinically meaningful gait speed gain, comparable to large effect sizes in PD motor outcome research." }
+];
+
+// Display range for bar: –0.10 to +0.45 (total 0.55)
+const BAR_MIN = -0.10, BAR_MAX = 0.45;
+// Tier boundaries on bar: 0.06, 0.14, 0.22
+// Segment widths (proportional to display range of 0.55):
+// seg0: –0.10→0.06 = 0.16/0.55 ≈ 29.1%
+// seg1:  0.06→0.14 = 0.08/0.55 ≈ 14.5%
+// seg2:  0.14→0.22 = 0.08/0.55 ≈ 14.5%
+// seg3:  0.22→0.45 = 0.23/0.55 ≈ 41.8%
+
+function getTier(pred) {
+  if (pred < 0.06) return 0;
+  if (pred < 0.14) return 1;
+  if (pred < 0.22) return 2;
+  return 3;
+}
+
+function pointerPct(pred) {
+  const clamped = Math.max(BAR_MIN, Math.min(BAR_MAX, pred));
+  return ((clamped - BAR_MIN) / (BAR_MAX - BAR_MIN)) * 100;
+}
+
+function predict() {
+  const pt    = parseInt(document.querySelector('input[name="pt"]:checked').value);
+  const moca  = parseFloat(document.getElementById("moca").value);
+  const speed = parseFloat(document.getElementById("speed").value);
+  return params.intercept + params.PT * pt + params.MoCA * moca + params.Speed * speed;
+}
+
+function liveCalc() {
+  // Update live only if result already shown
+  if (document.getElementById('resultContent').style.display !== 'none') {
+    renderResult(predict());
+  }
+}
+
+function calculate() {
+  const pred = predict();
+  document.getElementById('placeholder').style.display    = 'none';
+  document.getElementById('resultContent').style.display  = 'block';
+  renderResult(pred);
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function renderResult(pred) {
+  const tier = getTier(pred);
+  const t    = TIERS[tier];
+  const pct  = pointerPct(pred);
+
+  // Big number
+  document.getElementById("predVal").innerHTML =
+    (pred >= 0 ? "+" : "") + pred.toFixed(3) + ' <span>m/s</span>';
+
+  // Tier badge
+  const badge = document.getElementById("tierBadge");
+  badge.textContent = t.label;
+  badge.style.color        = t.color;
+  badge.style.borderColor  = t.badgeBorder;
+  badge.style.background   = t.badgeBg;
+
+  // Pointer position
+  document.getElementById("pointer").style.left    = pct + "%";
+  document.getElementById("pointerVal").style.left = pct + "%";
+  document.getElementById("pointerVal").textContent = (pred >= 0 ? "+" : "") + pred.toFixed(3) + " m/s";
+
+  // Highlight active segment
+  ['seg0','seg1','seg2','seg3'].forEach((id,i) => {
+    document.getElementById(id).style.opacity = (i === tier) ? '1' : '0.45';
+  });
+
+  // Interpretation
+  const box = document.getElementById("interpBox");
+  box.className  = "interp-box" + (t.interpClass ? " " + t.interpClass : "");
+  box.innerHTML  = t.text;
+
+  // Highlight reference table row
+  document.querySelectorAll('#mcidRefTable tbody tr').forEach(tr => {
+    tr.classList.toggle('active-tier', parseInt(tr.dataset.tier) === tier);
+  });
+}
+</script>
+</body>
+</html>
