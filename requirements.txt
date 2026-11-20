@@ -1,0 +1,13 @@
+# Results reported in the article were reproduced with the versions below
+# (Python 3.13). Other recent versions are expected to work.
+numpy==2.5.3
+pandas==3.0.5
+scipy==1.18.1
+statsmodels==0.15.0
+scikit-learn==1.9.1
+shap==0.54.1
+matplotlib==3.11.2
+openpyxl==3.1.5
+xlsxwriter
+PyWavelets
+streamlit

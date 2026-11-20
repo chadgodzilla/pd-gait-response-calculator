@@ -341,11 +341,11 @@ input[type=range] { flex: 1; accent-color: #1565C0; height: 4px; }
 
 <script>
 // ── Model coefficients (Ridge regression, StandardScaler pipeline; back-transformed to raw units) ──
-const params = {
-  intercept: 0.19756217209027355,
-  PT:    0.0825782131946108,
-  MoCA:  0.013621728989162614,
-  Speed: -0.4765715309408589
+const params = {            // final ridge model (alpha = 5), modeling/PD_gait_prediction_model.py
+  intercept: 0.1894200513739673,
+  PT:    0.07834491559094599,
+  MoCA:  0.012144558205099038,
+  Speed: -0.4296497587113169
 };
 
 // Tier definitions: [label, color, text-color for badge, border-color, interp class]
