@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+results_*/
+*_results.xlsx
+.DS_Store
